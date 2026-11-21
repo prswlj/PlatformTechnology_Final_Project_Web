@@ -1,0 +1,140 @@
+/* =========================================
+   ORALCARE CONNECT
+   TIME SLOT PICKER STYLES
+   Loaded after style.css. Uses the same
+   color variables, so it follows your palette.
+========================================= */
+
+/* =========================================
+   1. LABEL
+========================================= */
+
+.time-slot-label {
+    color: var(--green);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+
+/* =========================================
+   2. SLOT GRID
+========================================= */
+
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+
+/* Modals are narrower, so use 4 per row */
+.modal-content .time-slots-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.time-slots-hint {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.time-slots-hint:empty {
+    display: none;
+}
+
+
+/* =========================================
+   3. SLOT BUTTONS
+========================================= */
+
+.time-slot {
+    min-height: 40px;
+    padding: 8px 6px;
+
+    background: var(--surface-soft);
+    color: var(--green-dark);
+
+    border: 1px solid var(--green-light);
+    border-radius: var(--radius-small);
+
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+
+    transition: var(--transition);
+}
+
+.time-slot:hover:not(:disabled) {
+    background: var(--light-green);
+    border-color: var(--green);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.time-slot:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* Chosen slot */
+.time-slot.selected {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--white);
+    box-shadow: 0 6px 14px rgba(36, 75, 58, 0.20);
+}
+
+.time-slot.selected:hover:not(:disabled) {
+    background: var(--green-dark);
+    border-color: var(--green-dark);
+}
+
+/* Taken or past slot */
+.time-slot:disabled {
+    background: #F1F3EF;
+    border-color: var(--border);
+    color: var(--muted);
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+
+/* =========================================
+   4. CUSTOMER BOOKING FORM LAYOUT
+   The slot picker needs the full width, so every
+   field in the booking form now stacks in one
+   column. This only overrides the earlier two-column
+   placement from style.css; nothing else changes.
+========================================= */
+
+#customerBookingForm > :nth-child(n) {
+    grid-column: 1 / -1;
+    grid-row: auto;
+}
+
+#customerBookingForm > #bookingError {
+    grid-row: auto;
+}
+
+
+/* =========================================
+   5. RESPONSIVE
+========================================= */
+
+@media (max-width: 600px) {
+
+    .time-slots-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+    }
+}
+
+@media (max-width: 380px) {
+
+    .time-slots-grid,
+    .modal-content .time-slots-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}

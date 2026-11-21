@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="OralCare Connect dental clinic appointment and queue management system">
+    <title>OralCare Connect | Dental Clinic Appointment System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="timeslots.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="script.js" defer></script>
+    <script src="timeslots.js" defer></script>
+</head>
+<body>
+
+    <!-- AUTHENTICATION -->
+    <section id="authSection" class="auth-section">
+        <div class="auth-card">
+            <div class="brand-logo auth-brand">
+                <img src="./Assets/logo.png" alt="OralCare Connect Logo">
+            </div>
+
+            <p class="auth-subtitle">Online Appointment and Queue Management</p>
+
+            <!-- LOGIN -->
+            <div id="loginView">
+                <h2>Welcome Back</h2>
+                <p class="description">Sign in to access your account.</p>
+
+                <form id="loginForm">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" autocomplete="username" placeholder="Enter your email" required>
+
+                    <label for="loginPassword">Password</label>
+                    <div class="password-field">
+                        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle" data-target="loginPassword" aria-label="Show password" aria-pressed="false">Show</button>
+                    </div>
+
+                    <div class="forgot-password-row">
+                        <button type="button" id="forgotPasswordBtn">Forgot Password?</button>
+                    </div>
+
+                    <p id="loginError" class="error" role="alert"></p>
+                    <p id="loginLockoutMessage" class="error" role="status"></p>
+
+                    <button type="submit" id="loginSubmitBtn" class="btn full-width">Log In</button>
+                </form>
+
+                <p class="auth-switch">
+                    Don't have an account?
+                    <button type="button" onclick="showAuthView('signup')">Sign Up</button>
+                </p>
+            </div>
+
+            <!-- SIGN UP -->
+            <div id="signupView" hidden>
+                <h2>Create Account</h2>
+                <p class="description">Register to start booking appointments.</p>
+
+                <form id="signupForm">
+                    <div class="form-row">
+                        <div>
+                            <label for="signupFirstName">First Name</label>
+                            <input type="text" id="signupFirstName" autocomplete="given-name" placeholder="First name" required>
+                        </div>
+
+                        <div>
+                            <label for="signupMiddleName">Middle Name <span class="optional">(Optional)</span></label>
+                            <input type="text" id="signupMiddleName" autocomplete="additional-name" placeholder="Middle name">
+                        </div>
+                    </div>
+
+                    <label for="signupLastName">Last Name</label>
+                    <input type="text" id="signupLastName" autocomplete="family-name" placeholder="Last name" required>
+
+                    <label for="signupEmail">Email Address</label>
+                    <input type="email" id="signupEmail" autocomplete="email" placeholder="Enter your email" required>
+
+                    <label for="signupPhone">Phone Number</label>
+                    <input type="tel" id="signupPhone" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" placeholder="11-digit mobile number" required>
+
+                    <div class="form-row">
+                        <div>
+                            <label for="signupAge">Age</label>
+                            <input type="number" id="signupAge" min="1" max="120" placeholder="Age" required>
+                        </div>
+
+                        <div>
+                            <label for="signupGender">Gender</label>
+                            <select id="signupGender" required>
+                                <option value="">Select gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Prefer not to say">Prefer not to say</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label for="signupPassword">Password</label>
+                    <div class="password-field">
+                        <input type="password" id="signupPassword" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" required>
+                        <button type="button" class="password-toggle" data-target="signupPassword" aria-label="Show password" aria-pressed="false">Show</button>
+                    </div>
+
+                    <div class="password-strength" id="passwordStrength" aria-live="polite">
+                        <div class="strength-track">
+                            <span id="strengthBar"></span>
+                        </div>
+                        <small id="strengthText">Password strength: Not entered</small>
+                    </div>
+
+                    <label for="confirmPassword">Confirm Password</label>
+                    <div class="password-field">
+                        <input type="password" id="confirmPassword" autocomplete="new-password" placeholder="Confirm your password" required>
+                        <button type="button" class="password-toggle" data-target="confirmPassword" aria-label="Show password" aria-pressed="false">Show</button>
+                    </div>
+
+                    <p id="signupError" class="error" role="alert"></p>
+                    <button type="submit" class="btn full-width">Create Account</button>
+                </form>
+
+                <p class="auth-switch">
+                    Already have an account?
+                    <button type="button" onclick="showAuthView('login')">Log In</button>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ADMIN APPLICATION -->
+    <div class="app" id="adminApp" hidden>
+        <aside class="sidebar" id="sidebar">
+            <div class="brand-logo sidebar-brand">
+                <img src="Assets/logo.png" alt="OralCare Connect logo">
+            </div>
+
+            <p class="nav-label">MAIN MENU</p>
+            <button class="nav-item active" onclick="showPage('dashboard',this)">Dashboard</button>
+            <button class="nav-item" onclick="showPage('appointments',this)">Appointments</button>
+            <button class="nav-item" onclick="showPage('queue',this)">Queue Management</button>
+
+            <p class="nav-label">MANAGEMENT</p>
+            <button class="nav-item" onclick="showPage('services',this)">Services</button>
+            <button class="nav-item" onclick="showPage('dentists',this)">Dentists</button>
+            <button class="nav-item" onclick="showPage('notifications',this)">Notifications</button>
+            <button class="nav-item" onclick="showPage('activityLogs',this)">Activity Logs</button>
+            <button class="nav-item" onclick="showPage('settings',this)">Settings</button>
+
+            <p class="nav-label">ACCOUNT</p>
+            <button class="nav-item logout-btn" onclick="logout()">Log Out</button>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="mobile-menu" onclick="toggleSidebar()" aria-label="Toggle sidebar">☰</button>
+                    <h2 id="pageTitle">Dashboard</h2>
+                </div>
+
+                <div class="profile">
+                    <strong id="adminName">Administrator</strong>
+                    <div class="avatar">A</div>
+                </div>
+            </header>
+
+            <!-- ADMIN DASHBOARD -->
+            <section class="page active" id="dashboard">
+                <div class="page-heading">
+                    <h1>Welcome back, Administrator!</h1>
+                    <p>Here's what's happening with your appointments.</p>
+                </div>
+
+                <div class="stats">
+                    <div class="card">
+                        <p class="stat-title">Total Appointments</p>
+                        <h2 class="stat-number" id="totalAppointments">0</h2>
+                    </div>
+                    <div class="card">
+                        <p class="stat-title">Pending Requests</p>
+                        <h2 class="stat-number" id="pendingAppointments">0</h2>
+                    </div>
+                    <div class="card">
+                        <p class="stat-title">Approved</p>
+                        <h2 class="stat-number" id="approvedAppointments">0</h2>
+                    </div>
+                    <div class="card">
+                        <p class="stat-title">Available Services</p>
+                        <h2 class="stat-number" id="totalServices">0</h2>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="card">
+                        <h3 class="section-title">Recent Appointments</h3>
+                        <div id="dashboardAppointments"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="section-title">Queue Overview</h3>
+                        <p class="muted">Currently Serving</p>
+                        <h1 class="queue-number" id="currentQueue">Q-000</h1>
+                        <p class="muted">Waiting Customers</p>
+                        <h2 class="queue-number" id="waitingQueue">0</h2>
+                        <button class="btn" onclick="showPage('queue')">Manage Queue</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ADMIN APPOINTMENTS -->
+            <section class="page" id="appointments">
+                <div class="page-heading">
+                    <h1>Appointments</h1>
+                    <p>View and manage customer appointment requests.</p>
+                </div>
+
+                <div class="card">
+                    <div class="section-header">
+                        <h3>Appointment List</h3>
+                        <button class="btn" onclick="openModal()">+ New Appointment</button>
+                    </div>
+                    <div class="table-wrap" id="appointmentTable"></div>
+                </div>
+            </section>
+
+            <!-- QUEUE MANAGEMENT -->
+            <section class="page" id="queue">
+                <div class="page-heading">
+                    <h1>Queue Management</h1>
+                    <p>Manage customer queue numbers and serving status.</p>
+                </div>
+
+                <div class="content-grid">
+                    <div class="card">
+                        <h3 class="section-title">Now Serving</h3>
+                        <h1 class="queue-number" id="queueCurrent">Q-000</h1>
+                        <button class="btn" onclick="callNext()">Call Next Customer</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="section-title">Waiting Customers</h3>
+                        <h1 class="queue-number" id="queueWaiting">0</h1>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="section-title">Queue List</h3>
+                    <div class="table-wrap" id="queueTable"></div>
+                </div>
+            </section>
+
+            <!-- SERVICES -->
+            <section class="page" id="services">
+                <div class="page-heading">
+                    <h1>Services</h1>
+                    <p>Available services offered by the clinic.</p>
+                </div>
+                <div class="service-list" id="serviceList"></div>
+            </section>
+
+            <!-- DENTISTS -->
+            <section class="page" id="dentists">
+                <div class="page-heading">
+                    <h1>Dentist Management</h1>
+                    <p>Add and manage dentists available for appointments.</p>
+                </div>
+
+                <div class="card">
+                    <h3 class="section-title">Add Dentist</h3>
+                    <form id="dentistForm" class="inline-form">
+                        <div>
+                            <label for="dentistName">Dentist Name</label>
+                            <input type="text" id="dentistName" placeholder="Full Name" required>
+                        </div>
+
+                        <div>
+                            <label for="dentistSpecialty">Specialty / Service Focus</label>
+                            <input type="text" id="dentistSpecialty" placeholder="e.g. General Dentistry" required>
+                        </div>
+
+                        <div>
+                            <label for="dentistBio">Short Description</label>
+                            <input type="text" id="dentistBio" placeholder="A short introduction">
+                        </div>
+
+                        <div>
+                            <label for="dentistPhoto">Photo Path (Optional)</label>
+                            <input type="text" id="dentistPhoto" placeholder="Assets/dentist-name.jpg">
+                        </div>
+
+                        <button type="submit" class="btn">Add Dentist</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3 class="section-title">Dentist List</h3>
+                    <div id="dentistList"></div>
+                </div>
+            </section>
+
+            <!-- NOTIFICATIONS -->
+            <section class="page" id="notifications">
+                <div class="page-heading">
+                    <h1>Notifications</h1>
+                    <p>Recent system activity and customer updates.</p>
+                </div>
+                <div class="card" id="notificationList"></div>
+            </section>
+
+            <!-- ACTIVITY LOGS -->
+            <section class="page" id="activityLogs">
+                <div class="page-heading">
+                    <h1>Activity Logs</h1>
+                    <p>Review important actions performed in the system.</p>
+                </div>
+
+                <div class="card">
+                    <div class="section-header">
+                        <h3>System Activity Records</h3>
+                        <button type="button" class="btn btn-light" onclick="renderActivityLogs()">Refresh</button>
+                    </div>
+                    <div class="table-wrap" id="activityLogList"></div>
+                </div>
+            </section>
+
+            <!-- SETTINGS -->
+            <section class="page" id="settings">
+                <div class="page-heading">
+                    <h1>Settings</h1>
+                    <p>Manage clinic information and system preferences.</p>
+                </div>
+
+                <div class="card settings-card">
+                    <h3 class="section-title">Clinic and System Settings</h3>
+
+                    <form id="settingsForm" class="settings-form">
+                        <div class="settings-grid">
+                            <div>
+                                <label for="settingClinicName">Clinic Name</label>
+                                <input id="settingClinicName" type="text" value="OralCare Connect" required>
+                            </div>
+
+                            <div>
+                                <label for="settingPhone">Contact Number</label>
+                                <input id="settingPhone" type="tel" placeholder="Enter clinic contact number">
+                            </div>
+
+                            <div>
+                                <label for="settingEmail">Contact Email</label>
+                                <input id="settingEmail" type="email" placeholder="Enter clinic email">
+                            </div>
+
+                            <div>
+                                <label for="settingAddress">Clinic Address</label>
+                                <input id="settingAddress" type="text" placeholder="Enter clinic address">
+                            </div>
+
+                            <div>
+                                <label for="settingOpening">Opening Time</label>
+                                <input id="settingOpening" type="time" value="08:00">
+                            </div>
+
+                            <div>
+                                <label for="settingClosing">Closing Time</label>
+                                <input id="settingClosing" type="time" value="17:00">
+                            </div>
+
+                            <div>
+                                <label for="settingAdminName">Administrator Name</label>
+                                <input id="settingAdminName" type="text" value="System Administrator">
+                            </div>
+
+                            <div>
+                                <label for="settingAdminEmail">Administrator Email</label>
+                                <input id="settingAdminEmail" type="email" value="admin@qserve.com" disabled>
+                            </div>
+                        </div>
+
+                        <p id="settingsMessage" class="success" role="status"></p>
+
+                        <div class="form-actions">
+                            <button class="btn" type="submit">Save Settings</button>
+                            <button class="btn btn-light" type="reset">Reset Changes</button>
+                        </div>
+                    </form>
+
+                    <div class="system-info">
+                        <p><strong>System:</strong> OralCare Connect</p>
+                        <p><strong>Type:</strong> Dental Clinic Appointment and Queue Management System</p>
+                        <p><strong>Version:</strong> 1.3</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- CUSTOMER APPLICATION -->
+    <div class="customer-app" id="customerApp" hidden>
+        <aside class="customer-sidebar" id="customerSidebar">
+            <div class="brand-logo customer-sidebar-brand">
+                <img src="Assets/logo.png" alt="OralCare Connect logo">
+            </div>
+
+            <div class="customer-sidebar-profile">
+                <div class="avatar" id="customerAvatar">C</div>
+                <div>
+                    <strong id="customerSidebarName">Customer</strong>
+                    <small>Patient Account</small>
+                </div>
+            </div>
+
+            <p class="nav-label">CUSTOMER MENU</p>
+            <nav class="customer-navigation" aria-label="Customer navigation">
+                <button class="customer-nav-item active" onclick="showCustomerPage('customerDashboard',this)">Dashboard</button>
+                <button class="customer-nav-item" onclick="showCustomerPage('customerBooking',this)">Book Appointment</button>
+                <button class="customer-nav-item" onclick="showCustomerPage('customerSchedule',this)">My Schedule</button>
+                <button class="customer-nav-item" onclick="showCustomerPage('customerServices',this)">Services</button>
+                <button class="customer-nav-item" onclick="showCustomerPage('customerDentists',this)">Dentists</button>
+                <button class="customer-nav-item" onclick="showCustomerPage('customerAccount',this)">My Account</button>
+            </nav>
+
+            <button class="customer-nav-item customer-logout" onclick="logout()">Log Out</button>
+        </aside>
+
+        <main class="customer-content">
+            <header class="customer-header">
+                <div class="topbar-left">
+                    <button class="mobile-menu customer-menu-toggle" onclick="toggleCustomerSidebar()" aria-label="Toggle customer sidebar">☰</button>
+                    <h2 id="customerPageTitle">Dashboard</h2>
+                </div>
+
+                <div class="customer-profile">
+                    <strong id="customerHeaderName">Customer</strong>
+                </div>
+            </header>
+
+            <div class="customer-main">
+                <!-- CUSTOMER DASHBOARD -->
+                <section class="customer-page active" id="customerDashboard">
+                    <div class="page-heading">
+                        <h1 id="customerWelcome">Welcome!</h1>
+                        <p>Manage your appointments and check your queue status.</p>
+                    </div>
+
+                    <div class="stats customer-stats">
+                        <div class="card">
+                            <p class="stat-title">Total Appointments</p>
+                            <h2 class="stat-number" id="customerTotalAppointments">0</h2>
+                        </div>
+
+                        <div class="card">
+                            <p class="stat-title">Pending</p>
+                            <h2 class="stat-number" id="customerPendingAppointments">0</h2>
+                        </div>
+
+                        <div class="card">
+                            <p class="stat-title">Approved</p>
+                            <h2 class="stat-number" id="customerApprovedAppointments">0</h2>
+                        </div>
+                    </div>
+
+                    <div class="content-grid">
+                        <div class="card">
+                            <h3 class="section-title">Quick Actions</h3>
+                            <button class="btn" onclick="showCustomerPage('customerBooking')">+ Book an Appointment</button>
+                            <button class="btn btn-light" onclick="showCustomerPage('customerSchedule')">View My Schedule</button>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="section-title">My Queue Status</h3>
+                            <p class="muted">My Queue Number</p>
+                            <h1 class="queue-number" id="customerQueueNumber">—</h1>
+                            <p class="muted">Currently Serving</p>
+                            <h2 class="queue-number" id="customerCurrentQueue">Q-000</h2>
+                            <p id="customerQueueStatus">You currently have no active queue.</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="section-title">Recent Appointments</h3>
+                        <div class="table-wrap" id="customerRecentAppointments"></div>
+                    </div>
+                </section>
+
+                <!-- BOOKING -->
+                <section class="customer-page" id="customerBooking">
+                    <div class="page-heading">
+                        <h1>Book an Appointment</h1>
+                        <p>Select a service, dentist, and your preferred schedule.</p>
+                    </div>
+
+                    <div class="card form-card">
+                        <form id="customerBookingForm">
+                            <label for="customerService">Select Service</label>
+                            <select id="customerService" required></select>
+
+                            <label for="customerDentist">Select Dentist</label>
+                            <select id="customerDentist" required></select>
+
+                            <label for="customerAppointmentDate">Appointment Date</label>
+                            <input type="date" id="customerAppointmentDate" required>
+
+                            <label for="customerAppointmentTime" class="time-slot-label">Select Time Slot</label>
+                            <input type="time" id="customerAppointmentTime" hidden>
+                            <div id="customerTimeSlots" class="time-slots"></div>
+
+                            <p id="bookingError" class="error" role="alert"></p>
+                            <button type="submit" class="btn">Submit Appointment</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- CUSTOMER SCHEDULE -->
+                <section class="customer-page" id="customerSchedule">
+                    <div class="page-heading">
+                        <h1>My Schedule</h1>
+                        <p>View and manage your appointment requests.</p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="section-title">My Appointments</h3>
+                        <div class="table-wrap" id="customerAppointmentTable"></div>
+                    </div>
+                </section>
+
+                <!-- CUSTOMER DENTISTS -->
+                <section class="customer-page" id="customerDentists">
+                    <div class="page-heading">
+                        <h1>Meet Our Dentists</h1>
+                        <p>Get to know the dental professionals available at our clinic.</p>
+                    </div>
+                    <div class="dentist-grid" id="customerDentistList"></div>
+                </section>
+
+                <!-- CUSTOMER SERVICES -->
+                <section class="customer-page" id="customerServices">
+                    <div class="page-heading">
+                        <h1>Available Services</h1>
+                        <p>Explore the services available for booking.</p>
+                    </div>
+                    <div class="service-list" id="customerServiceList"></div>
+                </section>
+
+                <!-- CUSTOMER ACCOUNT -->
+                <section class="customer-page" id="customerAccount">
+                    <div class="page-heading">
+                        <h1>My Account</h1>
+                        <p>Manage your personal information.</p>
+                    </div>
+
+                    <div class="card form-card">
+                        <h3 class="section-title">Edit Profile</h3>
+
+                        <form id="profileForm">
+                            <div class="form-row">
+                                <div>
+                                    <label for="profileFirstName">First Name</label>
+                                    <input type="text" id="profileFirstName" required>
+                                </div>
+
+                                <div>
+                                    <label for="profileMiddleName">Middle Name</label>
+                                    <input type="text" id="profileMiddleName">
+                                </div>
+                            </div>
+
+                            <label for="profileLastName">Last Name</label>
+                            <input type="text" id="profileLastName" required>
+
+                            <label for="profilePhone">Phone Number</label>
+                            <input type="tel" id="profilePhone" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" required>
+
+                            <div class="form-row">
+                                <div>
+                                    <label for="profileAge">Age</label>
+                                    <input type="number" id="profileAge" min="1" max="120" required>
+                                </div>
+
+                                <div>
+                                    <label for="profileGender">Gender</label>
+                                    <select id="profileGender" required>
+                                        <option value="">Select gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Prefer not to say">Prefer not to say</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <label for="profileEmail">Email Address</label>
+                            <input type="email" id="profileEmail" required>
+
+                            <label for="profilePassword">New Password</label>
+                            <div class="password-field">
+                                <input type="password" id="profilePassword" minlength="8" placeholder="Leave blank to keep current password">
+                                <button type="button" class="password-toggle" data-target="profilePassword" aria-label="Show password" aria-pressed="false">Show</button>
+                            </div>
+
+                            <label for="profileConfirmPassword">Confirm New Password</label>
+                            <div class="password-field">
+                                <input type="password" id="profileConfirmPassword" placeholder="Confirm new password">
+                                <button type="button" class="password-toggle" data-target="profileConfirmPassword" aria-label="Show password" aria-pressed="false">Show</button>
+                            </div>
+
+                            <p id="profileError" class="error" role="alert"></p>
+                            <p id="profileSuccess" class="success" role="status"></p>
+
+                            <button type="submit" class="btn">Save Changes</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- ADMIN APPOINTMENT MODAL -->
+    <div class="modal" id="appointmentModal">
+        <div class="modal-content">
+            <h2>New Appointment</h2>
+
+            <form id="appointmentForm">
+                <label for="customerName">Customer Name</label>
+                <input type="text" id="customerName" required>
+
+                <label for="serviceInput">Service</label>
+                <select id="serviceInput" required></select>
+
+                <label for="adminDentistInput">Dentist</label>
+                <select id="adminDentistInput" required></select>
+
+                <label for="appointmentDate">Appointment Date</label>
+                <input type="date" id="appointmentDate" required>
+
+                <label for="appointmentTime" class="time-slot-label">Select Time Slot</label>
+                <input type="time" id="appointmentTime" hidden>
+                <div id="adminTimeSlots" class="time-slots"></div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn">Save Appointment</button>
+                    <button type="button" class="btn btn-light" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOMER RESCHEDULE MODAL -->
+    <div class="modal" id="rescheduleModal">
+        <div class="modal-content">
+            <h2>Request Reschedule</h2>
+            <p class="muted">Choose a new date and time. Your request must be reviewed by the clinic.</p>
+
+            <form id="rescheduleForm">
+                <input type="hidden" id="rescheduleAppointmentId">
+
+                <label for="rescheduleDate">New Appointment Date</label>
+                <input type="date" id="rescheduleDate" required>
+
+                <label for="rescheduleTime" class="time-slot-label">Select New Time Slot</label>
+                <input type="time" id="rescheduleTime" hidden>
+                <div id="rescheduleTimeSlots" class="time-slots"></div>
+
+                <p id="rescheduleError" class="error" role="alert"></p>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn">Submit Request</button>
+                    <button type="button" class="btn btn-light" onclick="closeRescheduleModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
